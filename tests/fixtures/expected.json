@@ -1,0 +1,99 @@
+{
+  "bambu_cube.gcode": {
+    "filament_mm": 72.62151,
+    "filament_by_tool": {
+      "0": 47.15973,
+      "1": 25.46178
+    },
+    "extrude_path_mm": 1596.3557,
+    "retractions": 17,
+    "layers": 5,
+    "layer_filament": [
+      10.73089,
+      10.73089,
+      14.73089,
+      10.73089,
+      10.73089
+    ],
+    "bbox": [
+      18.0,
+      137.79,
+      1.0,
+      137.79,
+      0.2,
+      1.0
+    ]
+  },
+  "orca_cube.gcode": {
+    "filament_mm": 58.5214,
+    "filament_by_tool": {
+      "0": 58.5214
+    },
+    "extrude_path_mm": 1564.0,
+    "retractions": 15,
+    "layers": 5,
+    "layer_filament": [
+      11.70428,
+      11.70428,
+      11.70428,
+      11.70428,
+      11.70428
+    ],
+    "bbox": [
+      100.225,
+      119.775,
+      100.225,
+      119.775,
+      0.2,
+      1.0
+    ]
+  },
+  "prusa_cube.gcode": {
+    "filament_mm": 70.22568,
+    "filament_by_tool": {
+      "0": 70.22568
+    },
+    "extrude_path_mm": 1876.8,
+    "retractions": 18,
+    "layers": 6,
+    "layer_filament": [
+      11.70428,
+      11.70428,
+      11.70428,
+      11.70428,
+      11.70428,
+      11.70428
+    ],
+    "bbox": [
+      115.225,
+      134.775,
+      95.225,
+      114.775,
+      0.2,
+      1.2
+    ]
+  },
+  "marlin_generic.gcode": {
+    "filament_mm": 48.2272,
+    "filament_by_tool": {
+      "0": 48.2272
+    },
+    "extrude_path_mm": 928.0,
+    "retractions": 8,
+    "layers": 4,
+    "layer_filament": [
+      12.0568,
+      12.0568,
+      12.0568,
+      12.0568
+    ],
+    "bbox": [
+      45.25,
+      74.75,
+      45.25,
+      74.75,
+      0.25,
+      1.0
+    ]
+  }
+}
