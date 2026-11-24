@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-11-24
+
+### Fixed
+
+- The filament colour and the printer model the file was sliced for were not read, although Bambu
+  Studio, OrcaSlicer and PrusaSlicer write both. printfarm-planner therefore saw a two-colour PLA
+  job as `PLA + PLA`, charged a material change against loaded `PLA:black` spools, and could
+  schedule a file sliced for one printer model on another.
+- Saving `--json` output with `>` in Windows PowerShell produced a file other tools could not read
+  (UTF-16 or UTF-8 with a BOM). The new `--out` option writes UTF-8 without a BOM.
+
+### Added
+
+- `metadata.filament_colour` (`filament_colour`, one `#RRGGBB` per filament), `metadata.printer_model`
+  (`printer_model`, or Cura's `TARGET_MACHINE.NAME`) and `tools[].colour` in the JSON; the colour
+  and printer model also appear in the text summary.
+- `"schema_version": 2` at the top of `analyze --json` output. 0.1.0 output has no version field;
+  version 2 only adds fields.
+- `-o/--out FILE` for `analyze`, `cost` and `compare`.
+
 ## [0.1.0] - 2026-11-18
 
 First release.
@@ -29,4 +49,5 @@ First release.
 - Not yet validated against real slicer output, measured print times or weighed parts; see the
   README section "Known limitations".
 
+[0.2.0]: https://github.com/projectbin07-stack/gcode-insight/releases/tag/v0.2.0
 [0.1.0]: https://github.com/projectbin07-stack/gcode-insight/releases/tag/v0.1.0

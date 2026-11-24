@@ -20,7 +20,8 @@ and in CI, with no printer and no slicer installed.
   `G92`, `G28`, `G4`, `G20/G21`, tool changes, `M104/M109/M140/M190` temperatures and `M106/M107`
   fan commands. Files are read line by line; memory use does not grow with file size.
 - **Slicer metadata** from header/footer comments: slicer name and version, estimated time, filament
-  used, layer height, nozzle diameter, filament type/density/diameter. Understands the Bambu Studio,
+  used, layer height, nozzle diameter, filament type/density/diameter/colour and the printer model
+  the file was sliced for. Understands the Bambu Studio,
   OrcaSlicer, PrusaSlicer/SuperSlicer and Cura comment styles and returns empty fields when they are
   absent.
 - **Geometry and statistics**: layers (from `;LAYER_CHANGE` / `; CHANGE_LAYER` / `;LAYER:n` markers,
@@ -30,8 +31,8 @@ and in CI, with no printer and no slicer installed.
   limits, compared against the slicer's own estimate when the file has one.
 - **Cost model**: filament price, machine hourly rate, electricity, failure allowance, markup, fixed
   setup cost, and batch totals for N copies.
-- **Output** as a terminal summary, JSON (`--json`), or a single self-contained HTML report with
-  inline SVG charts (no scripts, no external assets).
+- **Output** as a terminal summary, JSON (`--json`, written to a file with `--out FILE`), or a
+  single self-contained HTML report with inline SVG charts (no scripts, no external assets).
 - Reads plain `.gcode` and Bambu/Orca `.gcode.3mf` archives (`--plate N`).
 - No runtime dependencies outside the Python standard library.
 
@@ -65,6 +66,7 @@ G-code analysis: bambu_cube.gcode
 
 File
   Slicer             BambuStudio 01.10.01.50
+  Sliced for         Bambu Lab P1S
   Lines              350
   Layers             5 (detected from slicer markers)
   Layer height       0.2 mm
@@ -75,13 +77,13 @@ File
   Fan (max)          P1: 100%, P2: 70%
 
 Filament
-  Filament length  72.62 mm (0.073 m)
-  Volume           0.175 cm^3
-  Mass             0.22 g
-    T0 PLA         47.16 mm, 0.14 g (density 1.24 g/cm^3)
-    T1 PETG        25.46 mm, 0.08 g (density 1.27 g/cm^3)
-  Slicer says      72.62 mm
-  Slicer mass      0.22 g
+  Filament length    72.62 mm (0.073 m)
+  Volume             0.175 cm^3
+  Mass               0.22 g
+    T0 PLA #FFFFFF   47.16 mm, 0.14 g (density 1.24 g/cm^3)
+    T1 PETG #161616  25.46 mm, 0.08 g (density 1.27 g/cm^3)
+  Slicer says        72.62 mm
+  Slicer mass        0.22 g
 
 Motion
   Extrusion path  1596.4 mm
@@ -104,7 +106,20 @@ Layers
 ```
 
 The bounding box includes the nozzle load line at the front of the bed, because it is an extruding
-move. Add `--json` for machine-readable output or `--html report.html` for the report:
+move. Add `--json` for machine-readable output or `--html report.html` for the report.
+
+To save the JSON for another tool (for example `printfarm-planner`), use `--out` rather than a shell
+redirect. Windows PowerShell 5.1's `>` re-encodes the output as UTF-16, or as UTF-8 with a byte-order
+mark when `Out-File` is set to `utf8`, and strict JSON readers reject both. `--out` always writes
+UTF-8 without a BOM:
+
+```console
+gcode-insight analyze part.gcode --json --out part.json
+```
+
+The JSON carries `"schema_version": 2`. Version 2 (0.2.0) added `metadata.filament_colour`,
+`metadata.printer_model` and `tools[].colour`; 0.1.0 output has no `schema_version` and lacks those
+fields. Nothing was removed or renamed.
 
 ![HTML report](docs/report.png)
 
@@ -208,11 +223,11 @@ options:
 ```console
 $ gcode-insight analyze --help
 usage: gcode-insight analyze [-h] [--json] [--html OUT] [--all-layers]
-                             [--filament-diameter MM] [--material NAME]
-                             [--density G_CM3] [--plate N] [--accel MM_S2]
-                             [--travel-accel MM_S2] [--max-feedrate X Y Z E]
-                             [--max-accel X Y Z E] [--jerk MM_S]
-                             [--ignore-gcode-limits]
+                             [-o FILE] [--filament-diameter MM]
+                             [--material NAME] [--density G_CM3] [--plate N]
+                             [--accel MM_S2] [--travel-accel MM_S2]
+                             [--max-feedrate X Y Z E] [--max-accel X Y Z E]
+                             [--jerk MM_S] [--ignore-gcode-limits]
                              file
 
 Analyse one G-code file.
@@ -225,6 +240,9 @@ options:
   --json                print JSON instead of text
   --html OUT            also write an HTML report
   --all-layers          list every layer in the text summary
+  -o, --out FILE        write the output (text or --json) to FILE as UTF-8
+                        without a BOM instead of printing it; use this rather
+                        than '>' in PowerShell
 
 filament:
   --filament-diameter MM
@@ -252,8 +270,8 @@ time model:
 
 `cost` takes the same filament and time-model options plus `--filament-price` (required),
 `--machine-rate`, `--power`, `--kwh-price`, `--failure-rate`, `--margin`, `--setup-cost`, `--copies`,
-`--time-source {auto,model,slicer}`, `--currency`, `--json` and `--html`. `compare A B` takes the
-filament and time-model options and `--json`. Exit status is 0 on success and 2 on a usage or input
+`--time-source {auto,model,slicer}`, `--currency`, `--json`, `--html` and `--out`. `compare A B` takes
+the filament and time-model options, `--json` and `--out`. Exit status is 0 on success and 2 on a usage or input
 error.
 
 ## How it works

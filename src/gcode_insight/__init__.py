@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from .analysis import (
+    SCHEMA_VERSION,
     Analysis,
     AnalysisOptions,
     Analyzer,
@@ -26,6 +27,7 @@ from .timing import Block, Planner, junction_speed, trapezoid_time
 
 __all__ = [
     "MATERIAL_DENSITIES",
+    "SCHEMA_VERSION",
     "Analysis",
     "AnalysisOptions",
     "Analyzer",
