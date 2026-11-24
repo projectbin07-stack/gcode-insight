@@ -17,6 +17,17 @@ from .report import format_analysis, format_compare, format_cost
 __all__ = ["build_parser", "main"]
 
 
+def _add_out_option(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "-o",
+        "--out",
+        type=Path,
+        metavar="FILE",
+        help="write the output (text or --json) to FILE as UTF-8 without a BOM "
+        "instead of printing it; use this rather than '>' in PowerShell",
+    )
+
+
 def _add_analysis_options(parser: argparse.ArgumentParser) -> None:
     group = parser.add_argument_group("filament")
     group.add_argument(
@@ -104,6 +115,7 @@ def build_parser() -> argparse.ArgumentParser:
     analyze.add_argument(
         "--all-layers", action="store_true", help="list every layer in the text summary"
     )
+    _add_out_option(analyze)
     _add_analysis_options(analyze)
 
     cost = commands.add_parser(
@@ -152,6 +164,7 @@ def build_parser() -> argparse.ArgumentParser:
     cost.add_argument("--currency", default="", metavar="SYMBOL", help="prefix for amounts")
     cost.add_argument("--json", action="store_true", help="print JSON instead of text")
     cost.add_argument("--html", type=Path, metavar="OUT", help="also write an HTML report")
+    _add_out_option(cost)
     _add_analysis_options(cost)
 
     compare = commands.add_parser(
@@ -162,6 +175,7 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("file_a", type=Path, metavar="A")
     compare.add_argument("file_b", type=Path, metavar="B")
     compare.add_argument("--json", action="store_true", help="print JSON instead of text")
+    _add_out_option(compare)
     _add_analysis_options(compare)
     return parser
 
@@ -201,9 +215,9 @@ def _run(args: argparse.Namespace) -> int:
         first = analyze_file(args.file_a, options, args.plate)
         second = analyze_file(args.file_b, options, args.plate)
         if args.json:
-            print(json.dumps({"a": first.to_dict(), "b": second.to_dict()}, indent=2))
+            _emit(args, json.dumps({"a": first.to_dict(), "b": second.to_dict()}, indent=2) + "\n")
         else:
-            sys.stdout.write(format_compare(first, second))
+            _emit(args, format_compare(first, second))
         return 0
 
     analysis = analyze_file(args.file, options, args.plate)
@@ -211,9 +225,9 @@ def _run(args: argparse.Namespace) -> int:
         if args.html is not None:
             args.html.write_text(render_html(analysis), encoding="utf-8")
         if args.json:
-            print(json.dumps(analysis.to_dict(), indent=2))
+            _emit(args, json.dumps(analysis.to_dict(), indent=2) + "\n")
         else:
-            sys.stdout.write(format_analysis(analysis, max_layers=0 if args.all_layers else 12))
+            _emit(args, format_analysis(analysis, max_layers=0 if args.all_layers else 12))
         return 0
 
     inputs = CostInputs(
@@ -237,10 +251,23 @@ def _run(args: argparse.Namespace) -> int:
             "cost": breakdown.to_dict(),
             "warnings": analysis.warnings,
         }
-        print(json.dumps(payload, indent=2))
+        _emit(args, json.dumps(payload, indent=2) + "\n")
     else:
-        sys.stdout.write(format_cost(analysis, breakdown, time_label, args.currency))
+        _emit(args, format_cost(analysis, breakdown, time_label, args.currency))
     return 0
+
+
+def _emit(args: argparse.Namespace, text: str) -> None:
+    """Print ``text``, or write it to ``--out`` as UTF-8 without a byte-order mark.
+
+    Redirecting with ``>`` in Windows PowerShell 5.1 re-encodes the output (UTF-16 by default,
+    UTF-8 with a byte-order mark when ``Out-File`` is set to ``utf8``), which strict JSON
+    readers reject; ``--out`` avoids the shell entirely.
+    """
+    if args.out is None:
+        sys.stdout.write(text)
+        return
+    args.out.write_text(text, encoding="utf-8", newline="\n")
 
 
 def main(argv: Sequence[str] | None = None) -> int:

@@ -309,3 +309,26 @@ def test_text_summary_shows_printer_model_and_colours(capsys: pytest.CaptureFixt
     assert re.search(r"Sliced for\s+MK4S", out)
     assert "PETG #FF8000 (density 1.27" in out
 
+
+@pytest.mark.parametrize("command", ["analyze", "cost", "compare"])
+def test_out_writes_utf8_without_bom(
+    command: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "result.json"
+    args = {
+        "analyze": ["analyze", str(BAMBU)],
+        "cost": ["cost", str(BAMBU), "--filament-price", "20"],
+        "compare": ["compare", str(ORCA), str(PRUSA)],
+    }[command]
+    assert main([*args, "--json", "--out", str(out)]) == 0
+    assert capsys.readouterr().out == ""
+    raw = out.read_bytes()
+    assert not raw.startswith(b"\xef\xbb\xbf")
+    assert b"\r\n" not in raw
+    assert isinstance(json.loads(raw.decode("utf-8")), dict)
+
+
+def test_out_with_text_output(tmp_path: Path) -> None:
+    out = tmp_path / "summary.txt"
+    assert main(["analyze", str(ORCA), "-o", str(out)]) == 0
+    assert out.read_text(encoding="utf-8").startswith("G-code analysis: orca_cube.gcode")
