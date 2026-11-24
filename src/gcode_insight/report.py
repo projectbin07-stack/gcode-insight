@@ -40,6 +40,7 @@ def format_analysis(analysis: Analysis, max_layers: int = 12) -> str:
     layer_basis = "slicer markers" if analysis.layer_mode == "markers" else "Z changes"
     file_rows = [
         ("Slicer", _slicer_label(analysis)),
+        *([("Sliced for", meta.printer_model)] if meta.printer_model else []),
         ("Lines", f"{analysis.line_count}"),
         ("Layers", f"{analysis.layer_count} (detected from {layer_basis})"),
     ]
@@ -76,7 +77,8 @@ def format_analysis(analysis: Analysis, max_layers: int = 12) -> str:
         for tool in analysis.tools:
             filament_rows.append(
                 (
-                    f"  T{tool.tool} {tool.material or '?'}",
+                    f"  T{tool.tool} {tool.material or '?'}"
+                    + (f" {tool.colour}" if tool.colour else ""),
                     f"{tool.filament_mm:.2f} mm, {tool.mass_g:.2f} g "
                     f"(density {tool.density:g} g/cm^3)",
                 )
@@ -86,8 +88,9 @@ def format_analysis(analysis: Analysis, max_layers: int = 12) -> str:
         filament_rows.append(
             (
                 "Material",
-                f"{tool.material or 'unknown'} (density {tool.density:g} g/cm^3, "
-                f"diameter {tool.diameter:g} mm)",
+                f"{tool.material or 'unknown'}"
+                + (f" {tool.colour}" if tool.colour else "")
+                + f" (density {tool.density:g} g/cm^3, diameter {tool.diameter:g} mm)",
             )
         )
     if meta.filament_used_mm:

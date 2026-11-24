@@ -133,3 +133,25 @@ def test_unrelated_comments_leave_metadata_empty() -> None:
     meta = collect("", "just a note", "TYPE:Outer wall", "Z:0.2", "move to start", "time: later")
     assert meta.is_empty
     assert meta == SlicerMetadata()
+
+
+def test_colour_and_printer_model_bambu_and_prusa() -> None:
+    bambu = collect(
+        "filament_colour = #ffffff;#161616",
+        "filament_type = PLA;PETG",
+        "printer_model = Bambu Lab P1S",
+    )
+    assert bambu.filament_colour == ["#FFFFFF", "#161616"]
+    assert bambu.printer_model == "Bambu Lab P1S"
+    prusa = collect('filament_colour = "#FF8000"', "printer_model = MK4S")
+    assert prusa.filament_colour == ["#FF8000"]
+    assert prusa.printer_model == "MK4S"
+
+
+def test_cura_target_machine_is_the_printer_model() -> None:
+    meta = collect("FLAVOR:Marlin", "TARGET_MACHINE.NAME:Creality Ender-3")
+    assert meta.printer_model == "Creality Ender-3"
+
+
+def test_empty_printer_model_is_ignored() -> None:
+    assert collect("printer_model = ", "printer_model = X1C").printer_model == "X1C"

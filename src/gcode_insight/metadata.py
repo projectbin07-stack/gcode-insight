@@ -9,7 +9,12 @@ Slicers write their settings and estimates as comments. The formats handled here
   plus ``; filament used [mm] = ...`` and
   ``; estimated printing time (normal mode) = 1h 2m 3s`` and ``; key = value``
   settings.
-* Cura: ``;TIME:1234``, ``;Filament used: 1.23m``, ``;Layer height: 0.2``.
+* Cura: ``;TIME:1234``, ``;Filament used: 1.23m``, ``;Layer height: 0.2``,
+  ``;TARGET_MACHINE.NAME:Creality Ender-3``.
+
+Bambu Studio, OrcaSlicer and PrusaSlicer also store ``filament_colour`` (one
+``#RRGGBB`` per filament, ``;``-separated) and ``printer_model`` (for example
+``Bambu Lab P1S`` or ``MK4S``) among their settings.
 
 Every field is optional. Files with no recognisable comments simply produce an
 empty :class:`SlicerMetadata`.
@@ -71,6 +76,10 @@ class SlicerMetadata:
     filament_density: list[float] = field(default_factory=list)
     filament_diameter: list[float] = field(default_factory=list)
     total_layers: int | None = None
+    #: Colour per filament as the slicer wrote it, e.g. ``"#161616"`` (upper-cased).
+    filament_colour: list[str] = field(default_factory=list)
+    #: Printer model the file was sliced for, e.g. ``"Bambu Lab P1S"``.
+    printer_model: str | None = None
 
     @property
     def is_empty(self) -> bool:
@@ -168,5 +177,17 @@ class MetadataCollector:
         elif key == "filament_density":
             if not meta.filament_density:
                 meta.filament_density = _numbers(value)
-        elif key == "filament_diameter" and not meta.filament_diameter:
-            meta.filament_diameter = _numbers(value)
+        elif key == "filament_diameter":
+            if not meta.filament_diameter:
+                meta.filament_diameter = _numbers(value)
+        elif key == "filament_colour":
+            if not meta.filament_colour:
+                meta.filament_colour = [
+                    part.strip().strip('"').upper()
+                    for part in re.split(r"[;,]", value)
+                    if part.strip().strip('"')
+                ]
+        elif key == "printer_model" or raw_key == "TARGET_MACHINE.NAME":
+            model = value.strip().strip('"').strip()
+            if meta.printer_model is None and model:
+                meta.printer_model = model

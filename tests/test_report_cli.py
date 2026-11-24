@@ -283,3 +283,29 @@ def test_undecodable_bytes_do_not_abort(tmp_path: Path) -> None:
     path = tmp_path / "latin.gcode"
     path.write_bytes(b"; caf\xe9 \xff\nM83\nG1 X10 E1 F1200\r\n")
     assert analyze_file(path).filament_mm == pytest.approx(1.0)
+
+
+def test_json_carries_colour_printer_model_and_schema_version(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    assert main(["analyze", str(BAMBU), "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["schema_version"] == 2
+    assert data["metadata"]["printer_model"] == "Bambu Lab P1S"
+    assert data["metadata"]["filament_colour"] == ["#FFFFFF", "#161616"]
+    assert [(t["tool"], t["material"], t["colour"]) for t in data["tools"]] == [
+        (0, "PLA", "#FFFFFF"),
+        (1, "PETG", "#161616"),
+    ]
+    assert main(["analyze", str(MARLIN), "--json"]) == 0
+    plain = json.loads(capsys.readouterr().out)
+    assert plain["metadata"]["printer_model"] is None
+    assert plain["tools"][0]["colour"] is None
+
+
+def test_text_summary_shows_printer_model_and_colours(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["analyze", str(PRUSA)]) == 0
+    out = capsys.readouterr().out
+    assert re.search(r"Sliced for\s+MK4S", out)
+    assert "PETG #FF8000 (density 1.27" in out
+

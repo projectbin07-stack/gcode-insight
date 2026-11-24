@@ -315,9 +315,11 @@ M84 ; disable motors
 
 ; prusaslicer_config = begin
 ; filament_density = 1.27
+; filament_colour = #FF8000
 ; filament_diameter = 1.75
 ; filament_type = PETG
 ; first_layer_height = 0.2
 ; layer_height = 0.2
 ; nozzle_diameter = 0.4
+; printer_model = MK4S
 ; prusaslicer_config = end

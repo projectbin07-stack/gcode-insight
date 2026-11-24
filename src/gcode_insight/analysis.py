@@ -25,6 +25,7 @@ from .reader import read_gcode_lines
 from .timing import Block, Planner, Vector
 
 __all__ = [
+    "SCHEMA_VERSION",
     "Analysis",
     "AnalysisOptions",
     "Analyzer",
@@ -36,6 +37,11 @@ __all__ = [
     "analyze_file",
     "analyze_lines",
 ]
+
+#: Version of the ``analyze --json`` layout. 0.1.0 wrote no version (treat as 1).
+#: 2 (0.2.0) added ``schema_version``, ``metadata.filament_colour``,
+#: ``metadata.printer_model`` and ``tools[].colour``; nothing was removed or renamed.
+SCHEMA_VERSION = 2
 
 _T = TypeVar("_T")
 
@@ -150,6 +156,8 @@ class ToolUsage:
     material: str | None
     density: float
     diameter: float
+    #: Filament colour from the slicer settings (``"#RRGGBB"``), if it wrote one.
+    colour: str | None = None
 
 
 @dataclass(slots=True)
@@ -202,7 +210,7 @@ class Analysis:
 
     def to_dict(self) -> dict[str, Any]:
         """Plain-data form suitable for ``json.dumps``."""
-        data = asdict(self)
+        data = {"schema_version": SCHEMA_VERSION, **asdict(self)}
         data["layer_count"] = self.layer_count
         data["fan_max_percent"] = {str(k): v for k, v in self.fan_max_percent.items()}
         return data
@@ -661,6 +669,7 @@ class Analyzer:
                     material=material,
                     density=density,
                     diameter=diameter,
+                    colour=_pick(meta.filament_colour, number),
                 )
             )
         if not tools:
