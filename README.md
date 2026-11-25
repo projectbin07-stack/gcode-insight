@@ -117,10 +117,12 @@ UTF-8 without a BOM:
 gcode-insight analyze part.gcode --json --out part.json
 ```
 
-The JSON carries `"schema_version": 3`. Version 2 (0.2.0) added `metadata.filament_colour`,
+The JSON carries `"schema_version": 4`. Version 2 (0.2.0) added `metadata.filament_colour`,
 `metadata.printer_model` and `tools[].colour`. Version 3 (0.3.0) added
-`metadata.estimated_time_source`, the comment the slicer's total came from. 0.1.0 output has no
-`schema_version` and lacks those fields. Nothing was removed or renamed.
+`metadata.estimated_time_source`, the comment the slicer's total came from. Version 4 (0.4.0)
+added the timeline fields described under [Timeline](#timeline-per-layer-and-per-tool). 0.1.0
+output has no `schema_version` and lacks those fields. Every version only added fields; nothing
+was removed or renamed.
 
 For Cura files the slicer's figure is read from `;PRINT.TIME:` (Griffin flavour, Ultimaker
 printers) or `;TIME:` (Marlin and other flavours). It is shown next to the model estimate and
@@ -205,6 +207,46 @@ cost = compute_cost(
 )
 print(cost.unit_cost, cost.batch_price)
 ```
+
+### Timeline per layer and per tool
+
+Each layer (and the start-up section) carries `start_s` and `end_s`, the model time from the
+start of the file at which it begins and ends. They are the running sum of `time_s`, starting
+with the start-up section at 0, so the last layer ends at `estimated_time_s`. Each layer also
+splits its filament by tool in `filament_mm_by_tool`, and `tool_change_events` lists every tool
+change with the layer it happened in and its time. From the synthetic two-filament fixture
+`tests/fixtures/bambu_cube.gcode` (values rounded here; the JSON has full precision):
+
+```text
+layer   start_s   end_s   filament_mm_by_tool
+    0      0.00    2.16   {"0": 14.97}            (start-up: purge line)
+    1      2.16    9.08   {"0": 10.73}
+    2      9.08   12.02   {"0": 10.73}
+    3     12.02   16.01   {"0": 10.73, "1": 4.00}
+    4     16.01   19.13   {"1": 10.73}
+    5     19.13   22.36   {"1": 10.73}
+
+tool_change_events: [{"from_tool": 0, "to_tool": 1, "layer": 3, "time_s": 15.14, "line": 221}]
+estimated_time_s:   22.36
+```
+
+```python
+analysis = analyze_file("plate_1.gcode.3mf")
+for layer in analysis.layers:
+    print(layer.index, layer.start_s, layer.end_s, layer.filament_mm_by_tool)
+for change in analysis.tool_change_events:
+    print(
+        f"T{change.from_tool} -> T{change.to_tool} in layer {change.layer} at {change.time_s:.0f} s"
+    )
+```
+
+The times are this tool's motion model, so they inherit its limits (see "Accuracy limits"
+below); scale them by a measured factor per printer if you need wall-clock times. Filament is
+attributed to the tool that was active when it was pushed, including purge and flush moves,
+because that filament really leaves the spool. A tool change commanded just before the first
+move of a new layer counts towards the layer that is still open (without slicer layer markers,
+a layer opens at its first extruding move). `from_tool` of the first change is 0, because the
+analyser starts with tool 0 selected.
 
 ## Command reference
 

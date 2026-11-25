@@ -290,7 +290,7 @@ def test_json_carries_colour_printer_model_and_schema_version(
 ) -> None:
     assert main(["analyze", str(BAMBU), "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
-    assert data["schema_version"] == 3
+    assert data["schema_version"] == 4
     assert data["metadata"]["printer_model"] == "Bambu Lab P1S"
     assert data["metadata"]["filament_colour"] == ["#FFFFFF", "#161616"]
     assert [(t["tool"], t["material"], t["colour"]) for t in data["tools"]] == [

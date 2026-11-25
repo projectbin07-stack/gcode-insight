@@ -397,6 +397,10 @@ def test_per_tool_usage_and_tool_changes() -> None:
     assert [tool.tool for tool in result.tools] == [0, 1]
     assert [tool.filament_mm for tool in result.tools] == pytest.approx([5.0, 5.0])
     assert result.tool_changes == 2  # T1000 is a firmware-internal selector, not a filament
+    assert [(c.from_tool, c.to_tool, c.line) for c in result.tool_change_events] == [
+        (0, 1, 4),
+        (1, 0, 8),
+    ]
     assert result.filament_mm == pytest.approx(10.0)
 
 

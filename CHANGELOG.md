@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- A timeline per layer and per tool, for tools that replay a file over time (a print-farm
+  simulator draining the right AMS tray, or charging a failed print to the right spool):
+  - `LayerStats.filament_mm_by_tool` (`layers[].filament_mm_by_tool` in the JSON, keyed by the
+    tool number as a string): each layer's filament split by the tool that pushed it. The
+    values add up to the layer's `filament_mm`, and over all layers to each tool's total.
+  - `LayerStats.start_s` / `end_s`: model time from the start of the file at which each layer
+    (and the start-up section) begins and ends, the running sum of `time_s`. The last layer
+    ends at `estimated_time_s`.
+  - `Analysis.tool_change_events` (`tool_change_events` in the JSON): every tool change as a
+    `ToolChange(from_tool, to_tool, layer, time_s, line)`, exported from the package.
+- `schema_version` is now 4. The change is additive: every existing field keeps its name,
+  type and meaning, and `tool_changes` stays the count (now always `len(tool_change_events)`).
+
 ## [0.3.0] - 2026-11-25
 
 ### Added

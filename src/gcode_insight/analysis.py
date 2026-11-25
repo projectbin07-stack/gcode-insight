@@ -33,6 +33,7 @@ __all__ = [
     "LayerStats",
     "MachineProfile",
     "TimeComparison",
+    "ToolChange",
     "ToolUsage",
     "analyze_file",
     "analyze_lines",
@@ -42,7 +43,9 @@ __all__ = [
 #: 2 (0.2.0) added ``schema_version``, ``metadata.filament_colour``,
 #: ``metadata.printer_model`` and ``tools[].colour``; nothing was removed or renamed.
 #: 3 (0.3.0) added ``metadata.estimated_time_source``; Cura's ``;PRINT.TIME`` is now read.
-SCHEMA_VERSION = 3
+#: 4 (0.4.0) added ``layers[].filament_mm_by_tool``, ``layers[].start_s``, ``layers[].end_s``
+#: (the same three on ``startup``) and ``tool_change_events``; nothing was removed or renamed.
+SCHEMA_VERSION = 4
 
 _T = TypeVar("_T")
 
@@ -126,8 +129,17 @@ class LayerStats:
     extrude_path_mm: float = 0.0
     #: Path length of non-extruding moves in mm.
     travel_mm: float = 0.0
+    #: Model time spent in this layer (motion plus ``G4`` dwell), in seconds.
     time_s: float = 0.0
     retractions: int = 0
+    #: ``filament_mm`` split by the tool that was active when the filament was pushed. Only
+    #: tools that pushed filament in this layer appear; the values sum to ``filament_mm``.
+    filament_mm_by_tool: dict[int, float] = field(default_factory=dict)
+    #: Model time from the start of the file at which this layer begins and ends, in seconds.
+    #: ``start_s`` of a layer equals ``end_s`` of the one before it, the start-up section
+    #: starts at 0, and ``end_s`` of the last layer equals ``Analysis.estimated_time_s``.
+    start_s: float = 0.0
+    end_s: float = 0.0
 
 
 @dataclass(slots=True)
@@ -159,6 +171,25 @@ class ToolUsage:
     diameter: float
     #: Filament colour from the slicer settings (``"#RRGGBB"``), if it wrote one.
     colour: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ToolChange:
+    """One tool (filament slot) change, in file order."""
+
+    #: Tool selected before and after the change. ``from_tool`` is 0 for the first change in a
+    #: file, because the analyser starts with tool 0 selected.
+    from_tool: int
+    to_tool: int
+    #: Where the change was commanded: 0 is the start-up section, n >= 1 is
+    #: ``Analysis.layers[n - 1]``. Slicers often switch tools just before the first move of a
+    #: layer; the change then belongs to whichever layer is open at that point.
+    layer: int
+    #: Model time from the start of the file at which the change is commanded, in seconds.
+    #: Queued moves have finished by then; the change itself adds no model time.
+    time_s: float
+    #: 1-based line number of the ``T`` command.
+    line: int
 
 
 @dataclass(slots=True)
@@ -194,6 +225,7 @@ class Analysis:
     extrude_path_mm: float
     travel_mm: float
     retractions: int
+    #: Number of tool changes; ``tool_change_events`` lists them.
     tool_changes: int
     bounding_box: BoundingBox | None
     #: Motion plus G4 dwell time from the trapezoidal model, in seconds.
@@ -205,16 +237,25 @@ class Analysis:
     #: Highest commanded duty per fan index (M106 ``P``), in percent.
     fan_max_percent: dict[int, float]
     warnings: list[str]
+    #: Every tool change with its layer and time, in file order (``len == tool_changes``).
+    tool_change_events: list[ToolChange] = field(default_factory=list)
 
     @property
     def layer_count(self) -> int:
         return len(self.layers)
 
     def to_dict(self) -> dict[str, Any]:
-        """Plain-data form suitable for ``json.dumps``."""
+        """Plain-data form suitable for ``json.dumps``.
+
+        Integer keys (tool and fan numbers) become strings, as JSON requires.
+        """
         data = {"schema_version": SCHEMA_VERSION, **asdict(self)}
         data["layer_count"] = self.layer_count
         data["fan_max_percent"] = {str(k): v for k, v in self.fan_max_percent.items()}
+        for layer in (data["startup"], *data["layers"]):
+            layer["filament_mm_by_tool"] = {
+                str(k): v for k, v in layer["filament_mm_by_tool"].items()
+            }
         return data
 
 
@@ -288,7 +329,8 @@ class Analyzer:
         self._e_net = 0.0
         self._e_high_water = 0.0
         self._tools: dict[int, float] = {}
-        self._tool_changes = 0
+        # (from, to, marker-layer index, z-layer index, time, line) per tool change.
+        self._tool_change_log: list[tuple[int, int, int, int, float, int]] = []
 
         self._marker_layers = _LayerTracker()
         self._z_layers = _LayerTracker()
@@ -348,7 +390,7 @@ class Analyzer:
         if handler is not None:
             handler(command)
         elif code[0] == "T" and code[1:].isdigit():
-            self._select_tool(int(code[1:]))
+            self._select_tool(int(code[1:]), command.line_no)
 
     def _check_layer_marker(self, comment: str) -> None:
         is_marker = comment in _LAYER_MARKERS or (
@@ -392,12 +434,23 @@ class Analyzer:
             if not named or letter in named:
                 self._pos[axis] = 0.0
 
-    def _select_tool(self, number: int) -> None:
+    def _select_tool(self, number: int, line: int) -> None:
         if number >= _MAX_TOOL_NUMBER or number == self._tool:
             return
+        # The flush times every queued move, so the clock below is the moment the change
+        # is commanded.
         self._planner.flush()
+        self._tool_change_log.append(
+            (
+                self._tool,
+                number,
+                self._marker_layers.current.index,
+                self._z_layers.current.index,
+                self._motion_time + self._dwell_time,
+                line,
+            )
+        )
         self._tool = number
-        self._tool_changes += 1
 
     def _nozzle_temp(self, command: Command) -> None:
         if command.code == "M109":
@@ -555,6 +608,8 @@ class Analyzer:
                 self._tools[self._tool] = self._tools.get(self._tool, 0.0) + gained
                 for layer in layers:
                     layer.filament_mm += gained
+                    by_tool = layer.filament_mm_by_tool
+                    by_tool[self._tool] = by_tool.get(self._tool, 0.0) + gained
 
         if extruding:
             self._extrude_path += distance
@@ -649,8 +704,24 @@ class Analyzer:
         self._planner.flush()
         meta = self._meta.metadata
         warnings = list(self._warnings)
-        tracker = self._marker_layers if self._marker_count > 0 else self._z_layers
-        layer_mode = "markers" if self._marker_count > 0 else "z"
+        markers = self._marker_count > 0
+        tracker = self._marker_layers if markers else self._z_layers
+        layer_mode = "markers" if markers else "z"
+        clock = 0.0
+        for layer in tracker.items:
+            layer.start_s = clock
+            clock += layer.time_s
+            layer.end_s = clock
+        tool_change_events = [
+            ToolChange(
+                from_tool=old,
+                to_tool=new,
+                layer=marker_index if markers else z_index,
+                time_s=at,
+                line=line,
+            )
+            for old, new, marker_index, z_index, at, line in self._tool_change_log
+        ]
 
         tools: list[ToolUsage] = []
         default_density_used = False
@@ -713,7 +784,7 @@ class Analyzer:
             extrude_path_mm=self._extrude_path,
             travel_mm=self._travel,
             retractions=self._retractions,
-            tool_changes=self._tool_changes,
+            tool_changes=len(tool_change_events),
             bounding_box=BoundingBox(*box) if box is not None else None,
             estimated_time_s=estimate,
             dwell_time_s=self._dwell_time,
@@ -722,6 +793,7 @@ class Analyzer:
             bed_temp_max=self._bed_max,
             fan_max_percent=dict(sorted(self._fans.items())),
             warnings=warnings,
+            tool_change_events=tool_change_events,
         )
 
     def _material_for(self, tool: int, meta: SlicerMetadata) -> tuple[str | None, float, bool]:
