@@ -10,8 +10,9 @@ no third-party content.
 | `orca_cube.gcode` | OrcaSlicer | `;LAYER_CHANGE`, Klipper-style commands, settings footer, relative E |
 | `prusa_cube.gcode` | PrusaSlicer | `;LAYER_CHANGE`, absolute E reset per layer, settings footer |
 | `marlin_generic.gcode` | plain Marlin | no slicer comments, layers only as Z changes, `G4`, `G91` |
+| `cura_griffin.gcode` | Cura, Griffin flavour | `;START_OF_HEADER` block with `;PRINT.TIME:`, `;GENERATOR.*`, `;LAYER:` markers, absolute E |
 
-The "estimated printing time" values in the headers and footers are placeholders, not real slicer
+The "estimated printing time" and `;PRINT.TIME` values in the headers and footers are placeholders, not real slicer
 estimates. Filament totals in the headers are the generator's own tally of what it wrote.
 
 `expected.json` is that tally in machine-readable form; the tests compare the analyser against it.

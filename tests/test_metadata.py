@@ -115,6 +115,33 @@ def test_cura_header() -> None:
     assert meta.filament_used_mm == [pytest.approx(2718.1)]
     assert meta.layer_height == 0.2
     assert meta.total_layers == 150
+    assert meta.estimated_time_source == ";TIME"
+
+
+def test_cura_griffin_header_print_time() -> None:
+    meta = collect(
+        "START_OF_HEADER",
+        "FLAVOR:Griffin",
+        "GENERATOR.NAME:Cura_SteamEngine",
+        "GENERATOR.VERSION:5.7.1",
+        "TARGET_MACHINE.NAME:Ultimaker S5",
+        "PRINT.TIME:5765",
+        "END_OF_HEADER",
+        "Generated with Cura_SteamEngine 5.7.1",
+        "TIME_ELAPSED:12.5",
+    )
+    assert (meta.slicer, meta.slicer_version) == ("Cura", "5.7.1")
+    assert meta.estimated_time_s == 5765.0
+    assert meta.estimated_time_source == ";PRINT.TIME"
+    assert meta.printer_model == "Ultimaker S5"
+
+
+def test_time_source_of_other_slicers() -> None:
+    bambu = collect("model printing time: 11m 8s; total estimated time: 17m 22s")
+    assert bambu.estimated_time_source == "total estimated time"
+    prusa = collect("estimated printing time (normal mode) = 1h 2m 3s")
+    assert prusa.estimated_time_source == "estimated printing time (normal mode)"
+    assert collect("GENERATOR.NAME:SomethingElse").slicer is None
 
 
 def test_first_value_wins_and_per_layer_height_is_ignored() -> None:

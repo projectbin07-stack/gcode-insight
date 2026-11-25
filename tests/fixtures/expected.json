@@ -95,5 +95,27 @@
       0.25,
       1.0
     ]
+  },
+  "cura_griffin.gcode": {
+    "filament_mm": 15.32628,
+    "filament_by_tool": {
+      "0": 15.32628
+    },
+    "extrude_path_mm": 460.8,
+    "retractions": 6,
+    "layers": 3,
+    "layer_filament": [
+      5.10876,
+      5.10876,
+      5.10876
+    ],
+    "bbox": [
+      90.2,
+      109.8,
+      90.2,
+      109.8,
+      0.2,
+      0.6
+    ]
   }
 }

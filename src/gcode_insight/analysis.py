@@ -41,7 +41,8 @@ __all__ = [
 #: Version of the ``analyze --json`` layout. 0.1.0 wrote no version (treat as 1).
 #: 2 (0.2.0) added ``schema_version``, ``metadata.filament_colour``,
 #: ``metadata.printer_model`` and ``tools[].colour``; nothing was removed or renamed.
-SCHEMA_VERSION = 2
+#: 3 (0.3.0) added ``metadata.estimated_time_source``; Cura's ``;PRINT.TIME`` is now read.
+SCHEMA_VERSION = 3
 
 _T = TypeVar("_T")
 
@@ -165,7 +166,8 @@ class TimeComparison:
     """This model's estimate next to the slicer's own figure."""
 
     slicer_time_s: float
-    #: Which slicer figure was used: "model printing time" or "total estimated time".
+    #: Which slicer figure was used: "model printing time", "total estimated time", or for Cura
+    #: the header it came from ("Cura ;PRINT.TIME", "Cura ;TIME").
     basis: str
     estimate_s: float
     difference_s: float
@@ -685,6 +687,8 @@ class Analyzer:
         reference, basis = meta.model_time_s, "model printing time"
         if reference is None:
             reference, basis = meta.estimated_time_s, "total estimated time"
+            if meta.slicer == "Cura" and meta.estimated_time_source:
+                basis = f"Cura {meta.estimated_time_source}"
         if reference is not None:
             comparison = TimeComparison(
                 slicer_time_s=reference,

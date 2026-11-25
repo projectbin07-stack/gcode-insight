@@ -117,9 +117,14 @@ UTF-8 without a BOM:
 gcode-insight analyze part.gcode --json --out part.json
 ```
 
-The JSON carries `"schema_version": 2`. Version 2 (0.2.0) added `metadata.filament_colour`,
-`metadata.printer_model` and `tools[].colour`; 0.1.0 output has no `schema_version` and lacks those
-fields. Nothing was removed or renamed.
+The JSON carries `"schema_version": 3`. Version 2 (0.2.0) added `metadata.filament_colour`,
+`metadata.printer_model` and `tools[].colour`. Version 3 (0.3.0) added
+`metadata.estimated_time_source`, the comment the slicer's total came from. 0.1.0 output has no
+`schema_version` and lacks those fields. Nothing was removed or renamed.
+
+For Cura files the slicer's figure is read from `;PRINT.TIME:` (Griffin flavour, Ultimaker
+printers) or `;TIME:` (Marlin and other flavours). It is shown next to the model estimate and
+labelled with its source, for example `Slicer (Cura ;PRINT.TIME)  1m 35s`.
 
 ![HTML report](docs/report.png)
 

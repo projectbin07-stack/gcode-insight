@@ -474,11 +474,52 @@ def marlin() -> tuple[str, Truth]:
     return w.text(), w.truth
 
 
+def cura() -> tuple[str, Truth]:
+    """Cura (Griffin flavour) style: ``;START_OF_HEADER`` block with ``;PRINT.TIME:``."""
+    layers, height, width = 3, 0.2, 0.4
+    cx = cy = 100.0
+    w = Writer(width, height, absolute_e=True)
+    w.raw(
+        ";START_OF_HEADER",
+        ";HEADER_VERSION:0.1",
+        ";FLAVOR:Griffin",
+        ";GENERATOR.NAME:Cura_SteamEngine",
+        ";GENERATOR.VERSION:5.7.1",
+        ";TARGET_MACHINE.NAME:Ultimaker S5",
+        ";EXTRUDER_TRAIN.0.INITIAL_TEMPERATURE:205",
+        ";EXTRUDER_TRAIN.0.NOZZLE.DIAMETER:0.4",
+        ";BUILD_PLATE.INITIAL_TEMPERATURE:60",
+        ";PRINT.TIME:95",
+        ";PRINT.GROUPS:1",
+        ";END_OF_HEADER",
+        ";Generated with Cura_SteamEngine 5.7.1",
+        "M140 S60",
+        "M104 S205",
+        "G28",
+        "M190 S60",
+        "M109 S205",
+        "M82 ;absolute extrusion mode",
+        "G92 E0",
+        f";LAYER_COUNT:{layers}",
+    )
+    for layer in range(layers):
+        w.raw(f";LAYER:{layer}")
+        w.begin_layer()
+        w.move_z(height * (layer + 1), 600)
+        w.raw(";TYPE:WALL-OUTER")
+        square_loop(w, cx, cy, 9.8, 1800)
+        w.raw(";TYPE:WALL-INNER")
+        square_loop(w, cx, cy, 9.4, 2400)
+    w.raw("M140 S0", "M104 S0", "M84", ";End of Gcode")
+    return w.text(), w.truth
+
+
 FIXTURES = {
     "bambu_cube.gcode": bambu,
     "orca_cube.gcode": orca,
     "prusa_cube.gcode": prusa,
     "marlin_generic.gcode": marlin,
+    "cura_griffin.gcode": cura,
 }
 
 

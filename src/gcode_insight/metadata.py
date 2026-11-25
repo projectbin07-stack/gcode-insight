@@ -10,7 +10,9 @@ Slicers write their settings and estimates as comments. The formats handled here
   ``; estimated printing time (normal mode) = 1h 2m 3s`` and ``; key = value``
   settings.
 * Cura: ``;TIME:1234``, ``;Filament used: 1.23m``, ``;Layer height: 0.2``,
-  ``;TARGET_MACHINE.NAME:Creality Ender-3``.
+  ``;TARGET_MACHINE.NAME:Creality Ender-3``. Cura's Griffin flavour (Ultimaker printers) writes
+  a ``;START_OF_HEADER`` block instead, with ``;PRINT.TIME:1234`` and
+  ``;GENERATOR.NAME:Cura_SteamEngine`` / ``;GENERATOR.VERSION:5.7.1``.
 
 Bambu Studio, OrcaSlicer and PrusaSlicer also store ``filament_colour`` (one
 ``#RRGGBB`` per filament, ``;``-separated) and ``printer_model`` (for example
@@ -64,6 +66,10 @@ class SlicerMetadata:
     slicer_version: str | None = None
     #: Slicer's total time estimate in seconds (includes start-up where the slicer does).
     estimated_time_s: float | None = None
+    #: The comment ``estimated_time_s`` was read from, e.g. ``"total estimated time"`` (Bambu
+    #: Studio), ``"estimated printing time (normal mode)"`` (PrusaSlicer, OrcaSlicer) or
+    #: ``";PRINT.TIME"`` / ``";TIME"`` (Cura).
+    estimated_time_source: str | None = None
     #: Bambu Studio's "model printing time" (excludes the preparation sequence).
     model_time_s: float | None = None
     filament_used_mm: list[float] = field(default_factory=list)
@@ -120,6 +126,7 @@ class MetadataCollector:
                 meta.model_time_s = parse_duration(model.group(1))
             if total is not None and meta.estimated_time_s is None:
                 meta.estimated_time_s = parse_duration(total.group(1))
+                meta.estimated_time_source = "total estimated time"
             if model is not None or total is not None:
                 return
 
@@ -133,10 +140,18 @@ class MetadataCollector:
         meta = self.metadata
         key = raw_key.lower()
 
-        # Cura keys are matched case-sensitively: "TIME" is too generic otherwise.
-        if raw_key == "TIME":
+        # Cura keys are matched case-sensitively: "TIME" is too generic otherwise. Griffin-flavour
+        # files carry ";PRINT.TIME:" in their header block, other flavours ";TIME:".
+        if raw_key in ("TIME", "PRINT.TIME"):
             if meta.estimated_time_s is None and (nums := _numbers(value)):
                 meta.estimated_time_s = nums[0]
+                meta.estimated_time_source = f";{raw_key}"
+        elif raw_key == "GENERATOR.NAME":
+            if meta.slicer is None and value.startswith("Cura"):
+                meta.slicer = "Cura"
+        elif raw_key == "GENERATOR.VERSION":
+            if meta.slicer == "Cura" and meta.slicer_version is None:
+                meta.slicer_version = value
         elif raw_key == "Filament used":
             if not meta.filament_used_mm:
                 meta.filament_used_mm = [
@@ -157,6 +172,7 @@ class MetadataCollector:
         elif key.startswith("estimated printing time (normal"):
             if meta.estimated_time_s is None:
                 meta.estimated_time_s = parse_duration(value)
+                meta.estimated_time_source = "estimated printing time (normal mode)"
         elif raw_key in ("layer_height", "Layer height"):
             # Case-sensitive on purpose: Bambu/Orca write "; LAYER_HEIGHT: 0.2" on
             # every layer, which must not masquerade as the global setting.

@@ -290,7 +290,7 @@ def test_json_carries_colour_printer_model_and_schema_version(
 ) -> None:
     assert main(["analyze", str(BAMBU), "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
-    assert data["schema_version"] == 2
+    assert data["schema_version"] == 3
     assert data["metadata"]["printer_model"] == "Bambu Lab P1S"
     assert data["metadata"]["filament_colour"] == ["#FFFFFF", "#161616"]
     assert [(t["tool"], t["material"], t["colour"]) for t in data["tools"]] == [
@@ -332,3 +332,18 @@ def test_out_with_text_output(tmp_path: Path) -> None:
     out = tmp_path / "summary.txt"
     assert main(["analyze", str(ORCA), "-o", str(out)]) == 0
     assert out.read_text(encoding="utf-8").startswith("G-code analysis: orca_cube.gcode")
+
+
+def test_cli_labels_cura_print_time_as_the_slicer_figure(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    cura = Path(__file__).parent / "fixtures" / "cura_griffin.gcode"
+    assert main(["analyze", str(cura)]) == 0
+    out = capsys.readouterr().out
+    assert re.search(r"Slicer \(Cura ;PRINT\.TIME\)\s+1m 35s", out)
+    assert "Model estimate" in out
+    assert main(["analyze", str(cura), "--json"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["metadata"]["estimated_time_source"] == ";PRINT.TIME"
+    assert data["time_comparison"]["basis"] == "Cura ;PRINT.TIME"
+    assert data["time_comparison"]["slicer_time_s"] == 95.0

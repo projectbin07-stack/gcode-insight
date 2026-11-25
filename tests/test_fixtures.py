@@ -16,7 +16,13 @@ from fixtures.generate_fixtures import build
 from gcode_insight import Analysis, analyze_file
 
 FIXTURES = Path(__file__).parent / "fixtures"
-NAMES = ["bambu_cube.gcode", "orca_cube.gcode", "prusa_cube.gcode", "marlin_generic.gcode"]
+NAMES = [
+    "bambu_cube.gcode",
+    "orca_cube.gcode",
+    "prusa_cube.gcode",
+    "marlin_generic.gcode",
+    "cura_griffin.gcode",
+]
 EXPECTED: dict[str, dict[str, Any]] = json.loads(
     (FIXTURES / "expected.json").read_text(encoding="utf-8")
 )
@@ -138,3 +144,20 @@ def test_marlin_fixture_details() -> None:
     assert analysis.dwell_time_s == pytest.approx(1.5)
     assert analysis.time_comparison is None
     assert any("PLA density" in warning for warning in analysis.warnings)
+
+
+def test_cura_griffin_fixture_reports_print_time_as_the_slicer_figure() -> None:
+    analysis = analyze_file(FIXTURES / "cura_griffin.gcode")
+    meta = analysis.metadata
+    assert (meta.slicer, meta.slicer_version) == ("Cura", "5.7.1")
+    assert meta.printer_model == "Ultimaker S5"
+    assert meta.estimated_time_s == 95.0
+    assert meta.estimated_time_source == ";PRINT.TIME"
+    assert meta.total_layers == analysis.layer_count == 3
+    assert analysis.layer_mode == "markers"
+    comparison = analysis.time_comparison
+    assert comparison is not None
+    assert comparison.basis == "Cura ;PRINT.TIME"
+    assert comparison.slicer_time_s == 95.0
+    assert comparison.estimate_s == pytest.approx(analysis.estimated_time_s)
+    assert comparison.difference_s == pytest.approx(analysis.estimated_time_s - 95.0)
