@@ -4,7 +4,7 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] - 2026-11-25
 
 ### Added
 
@@ -126,6 +126,7 @@ First release.
 - Not yet validated against real slicer output, measured print times or weighed parts; see the
   README section "Known limitations".
 
+[0.4.0]: https://github.com/projectbin07-stack/gcode-insight/releases/tag/v0.4.0
 [0.3.0]: https://github.com/projectbin07-stack/gcode-insight/releases/tag/v0.3.0
 [0.2.0]: https://github.com/projectbin07-stack/gcode-insight/releases/tag/v0.2.0
 [0.1.0]: https://github.com/projectbin07-stack/gcode-insight/releases/tag/v0.1.0
