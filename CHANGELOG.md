@@ -34,6 +34,15 @@ All notable changes to this project are documented here. The format follows
   loader still reads schema 1 files. The 0.3.0 loader refuses schema 2, so consumers must copy
   `registry.py` and `print_registry.json` together, as their CI check requires.
 - The registry loader now also checks that source dates are `YYYY-MM-DD`.
+- Real slicer output as test fixtures: `tests/fixtures/real/` holds OrcaSlicer 2.4.2 files
+  for the P1S, A1 and A1 mini (one two-colour P1S plate with 20 tool changes), sliced from
+  print-forge v0.2.0 models with each printer's default profiles. The new `Real slicer
+  fixtures` workflow downloads the pinned OrcaSlicer AppImage (SHA-256 checked), slices them
+  headless with `tests/fixtures/real/slice_fixtures.py`, uploads them with their provenance
+  and fails if they differ from the committed files. `tests/test_real_fixtures.py` checks
+  metadata, layer count, colours, the timeline and the tool changes on them. Their embedded
+  profile settings and start G-code are AGPL-3.0 (from OrcaSlicer's profiles); see
+  `tests/fixtures/real/README.md`.
 
 ## [0.3.0] - 2026-11-25
 

@@ -1,0 +1,105 @@
+{
+  "about": "Real OrcaSlicer output, made by tests/fixtures/real/slice_fixtures.py in the real-fixtures CI workflow. Nothing in these files was edited by hand.",
+  "orca_slicer": {
+    "download": "https://github.com/SoftFever/OrcaSlicer/releases/download/v2.4.2/OrcaSlicer_Linux_AppImage_Ubuntu2404_V2.4.2.AppImage",
+    "sha256": "d12fb8c8eac1aecd2dfb6377acd48f994f8fa439ed5292fa532dd82880f029fd",
+    "licence": "AGPL-3.0 (https://github.com/SoftFever/OrcaSlicer)",
+    "profile_bundle": "BBL 02.01.00.19"
+  },
+  "print_forge": {
+    "version": "v0.2.0",
+    "commands": {
+      "bead-gem-12.stl": "print-forge bead --preset gem-12 --out bead-gem-12.stl",
+      "tile-7.stl": "print-forge letter --preset tile-7 --ascii --out tile-7.stl"
+    }
+  },
+  "runner": "ubuntu24 20261116.376.1",
+  "fixtures": [
+    {
+      "file": "p1s-bead.gcode.3mf",
+      "sha256": "d147251cbfc25f3f07bf1de6cc86613fa7f6e08f0671dc3584dbdae89bad506d",
+      "slicer": "OrcaSlicer",
+      "slicer_version": "2.4.2",
+      "sliced_at": "2026-11-25 04:53:08",
+      "machine_profile": "Bambu Lab P1S 0.4 nozzle",
+      "process_profile": "0.20mm Standard @BBL X1C",
+      "filament_profiles": [
+        "Bambu PLA Basic @BBL X1C"
+      ],
+      "filament_colours": [
+        "#FFFFFF"
+      ],
+      "models": [
+        "bead-gem-12.stl"
+      ],
+      "filament_ids": null,
+      "command": "orca-slicer --datadir '$WORK/datadir' --slice 0 --load-settings '$WORK/p1s-bead/machine.json;$WORK/p1s-bead/process.json' --load-filaments '$WORK/p1s-bead/filament1.json' --arrange 1 --outputdir '$WORK/p1s-bead-out' --export-3mf p1s-bead.gcode.3mf '$WORK/bead-gem-12.stl'"
+    },
+    {
+      "file": "a1-bead.gcode.3mf",
+      "sha256": "a54e5d516d103ec8d96fb79ab65e8542ceae8d8900a07a9fd9491819ad4b1300",
+      "slicer": "OrcaSlicer",
+      "slicer_version": "2.4.2",
+      "sliced_at": "2026-11-25 04:53:08",
+      "machine_profile": "Bambu Lab A1 0.4 nozzle",
+      "process_profile": "0.20mm Standard @BBL A1",
+      "filament_profiles": [
+        "Bambu PLA Basic @BBL A1"
+      ],
+      "filament_colours": [
+        "#FFFFFF"
+      ],
+      "models": [
+        "bead-gem-12.stl"
+      ],
+      "filament_ids": null,
+      "command": "orca-slicer --datadir '$WORK/datadir' --slice 0 --load-settings '$WORK/a1-bead/machine.json;$WORK/a1-bead/process.json' --load-filaments '$WORK/a1-bead/filament1.json' --arrange 1 --outputdir '$WORK/a1-bead-out' --export-3mf a1-bead.gcode.3mf '$WORK/bead-gem-12.stl'"
+    },
+    {
+      "file": "a1-mini-bead.gcode.3mf",
+      "sha256": "b039f37ef0b041cc8258146a0fbbf6ce310cdccd76908652e776a7cc56bc7690",
+      "slicer": "OrcaSlicer",
+      "slicer_version": "2.4.2",
+      "sliced_at": "2026-11-25 04:53:09",
+      "machine_profile": "Bambu Lab A1 mini 0.4 nozzle",
+      "process_profile": "0.20mm Standard @BBL A1M",
+      "filament_profiles": [
+        "Bambu PLA Basic @BBL A1M"
+      ],
+      "filament_colours": [
+        "#FFFFFF"
+      ],
+      "models": [
+        "bead-gem-12.stl"
+      ],
+      "filament_ids": null,
+      "command": "orca-slicer --datadir '$WORK/datadir' --slice 0 --load-settings '$WORK/a1-mini-bead/machine.json;$WORK/a1-mini-bead/process.json' --load-filaments '$WORK/a1-mini-bead/filament1.json' --arrange 1 --outputdir '$WORK/a1-mini-bead-out' --export-3mf a1-mini-bead.gcode.3mf '$WORK/bead-gem-12.stl'"
+    },
+    {
+      "file": "p1s-two-colour.gcode.3mf",
+      "sha256": "05c882691adf191fcbdc0717f98db7ca35d9a50e88ca5c7e795e9d7455877987",
+      "slicer": "OrcaSlicer",
+      "slicer_version": "2.4.2",
+      "sliced_at": "2026-11-25 04:53:09",
+      "machine_profile": "Bambu Lab P1S 0.4 nozzle",
+      "process_profile": "0.20mm Standard @BBL X1C",
+      "filament_profiles": [
+        "Bambu PLA Basic @BBL X1C",
+        "Bambu PLA Matte @BBL X1C"
+      ],
+      "filament_colours": [
+        "#FFFFFF",
+        "#161616"
+      ],
+      "models": [
+        "bead-gem-12.stl",
+        "tile-7.stl"
+      ],
+      "filament_ids": [
+        1,
+        2
+      ],
+      "command": "orca-slicer --datadir '$WORK/datadir' --slice 0 --load-settings '$WORK/p1s-two-colour/machine.json;$WORK/p1s-two-colour/process.json' --load-filaments '$WORK/p1s-two-colour/filament1.json;$WORK/p1s-two-colour/filament2.json' --load-filament-ids 1,2 --arrange 1 --outputdir '$WORK/p1s-two-colour-out' --export-3mf p1s-two-colour.gcode.3mf '$WORK/bead-gem-12.stl' '$WORK/tile-7.stl'"
+    }
+  ]
+}
