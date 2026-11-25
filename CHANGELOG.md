@@ -4,6 +4,43 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-11-25
+
+### Added
+
+- A shared printer and material registry (`print_registry.json` and `registry.py`). It lists the
+  Bambu Lab P1S, P1P, X1 Carbon, A1 and A1 mini with build volume, enclosure, nozzle options,
+  build plates and AMS capacity. Each printer has manufacturer source URLs. It also lists base
+  polymers with trade-name aliases. This repo holds the canonical copy: printfarm-planner,
+  print-forge and stl-doctor vendor the two files unchanged, and their CI compares the copies
+  with this release. See [docs/registry.md](docs/registry.md).
+- Cura's Griffin-flavour `;PRINT.TIME:` header is read as the slicer's time estimate.
+  `;GENERATOR.NAME` / `;GENERATOR.VERSION` identify the slicer.
+- `metadata.estimated_time_source` in the JSON names the comment the slicer total came from.
+  `schema_version` is now 3. Nothing was removed or renamed.
+
+### Changed
+
+- Material densities are now resolved through the registry aliases before the leading-letters
+  rule. `Silk PLA` therefore gets the PLA density, where it previously had none and fell back to
+  the PLA default with a warning. The density values are unchanged (generic values, not
+  datasheet figures).
+- For Cura files the time comparison is labelled with its source (`Cura ;PRINT.TIME` or
+  `Cura ;TIME`) instead of `total estimated time`.
+
+Before and after, on the new synthetic Griffin fixture (`tests/fixtures/cura_griffin.gcode`):
+
+```text
+0.2.0  Model estimate   15.2s
+       Slicer estimate  not present in file
+0.3.0  Model estimate             15.2s
+       Slicer (Cura ;PRINT.TIME)  1m 35s
+       Model vs slicer            -80 s (-84.0%)
+```
+
+On the audit's Marlin-flavour Cura file (`;TIME:125`) only the label changes, from
+`Slicer (total estimated time)  2m 05s` to `Slicer (Cura ;TIME)  2m 05s`.
+
 ## [0.2.0] - 2026-11-24
 
 ### Fixed
@@ -49,5 +86,6 @@ First release.
 - Not yet validated against real slicer output, measured print times or weighed parts; see the
   README section "Known limitations".
 
+[0.3.0]: https://github.com/projectbin07-stack/gcode-insight/releases/tag/v0.3.0
 [0.2.0]: https://github.com/projectbin07-stack/gcode-insight/releases/tag/v0.2.0
 [0.1.0]: https://github.com/projectbin07-stack/gcode-insight/releases/tag/v0.1.0
