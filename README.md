@@ -302,7 +302,11 @@ Some decisions worth knowing about:
   tool that was active when it was pushed.
 - **Mass.** Density is taken, in order, from `--density`, `--material`, the slicer's
   `filament_density`, the slicer's `filament_type` looked up in the built-in table (PLA 1.24,
-  PETG 1.27, ABS 1.04, ASA 1.07, TPU 1.21 g/cm^3), and finally PLA with a warning.
+  PETG 1.27, ABS 1.04, ASA 1.07, TPU 1.21 g/cm^3), and finally PLA with a warning. Trade names
+  resolve to their base polymer through the aliases in the shared printer and material registry
+  (`PLA Silk`, `Silk PLA`, `PETG HF`, `PLA-CF`), then by leading letters. The densities are
+  generic values, not datasheet figures. The registry is vendored into printfarm-planner,
+  print-forge and stl-doctor; see [docs/registry.md](docs/registry.md).
 - **Layers.** If the file contains slicer layer markers they define the layers, and everything
   before the first marker (start G-code, purge line) is reported separately as start-up. Otherwise a
   new layer starts at each extruding move whose Z differs from the current layer's Z; non-extruding

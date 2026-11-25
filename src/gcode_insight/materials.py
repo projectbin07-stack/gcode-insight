@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import math
-import re
+
+from .registry import load_registry
 
 __all__ = [
     "DEFAULT_DENSITY",
@@ -14,34 +15,27 @@ __all__ = [
     "filament_volume_mm3",
 ]
 
-#: Typical solid densities in g/cm^3. Real spools vary by a few percent between
-#: brands and colours; pass an explicit density when the spool's datasheet has one.
+#: Generic solid densities in g/cm^3, from the shared registry (``print_registry.json``).
+#: They are not datasheet figures: real spools vary by a few percent between brands and
+#: colours, so pass an explicit density when the spool's datasheet has one.
 MATERIAL_DENSITIES: dict[str, float] = {
-    "PLA": 1.24,
-    "PETG": 1.27,
-    "ABS": 1.04,
-    "ASA": 1.07,
-    "TPU": 1.21,
+    m.key: m.density_g_cm3 for m in load_registry().materials if m.density_g_cm3 is not None
 }
 
 DEFAULT_FILAMENT_DIAMETER = 1.75
 DEFAULT_DENSITY = MATERIAL_DENSITIES["PLA"]
 
-_LEADING_LETTERS = re.compile(r"[A-Z]+")
-
 
 def density_for(material: str) -> float | None:
     """Look up a density for a material name such as ``"PLA"`` or ``"PETG-CF"``.
 
-    Matching uses the leading letters only, so ``"PLA+"``, ``"pla basic"`` and
-    ``"PLA-CF"`` all resolve to PLA. Filled variants really are slightly denser
-    than the base polymer; that difference is ignored here. Returns ``None`` for
-    unknown materials.
+    The shared registry resolves the name to its base polymer, first through its aliases
+    (``"Silk PLA"``, ``"PLA+"``, ``"PETG HF"``), then by its leading letters, so
+    ``"pla basic"`` and ``"PLA-CF"`` both resolve to PLA. Filled variants really are slightly
+    denser than the base polymer; that difference is ignored here. Returns ``None`` for unknown
+    materials and for polymers without a generic density (PA, PC, PET, PVA).
     """
-    match = _LEADING_LETTERS.match(material.strip().upper())
-    if match is None:
-        return None
-    return MATERIAL_DENSITIES.get(match.group(0))
+    return load_registry().density(material)
 
 
 def filament_volume_mm3(length_mm: float, diameter_mm: float = DEFAULT_FILAMENT_DIAMETER) -> float:
