@@ -208,6 +208,22 @@ cost = compute_cost(
 print(cost.unit_cost, cost.batch_price)
 ```
 
+### Printer and material registry
+
+The shared registry of Bambu Lab printers and base materials is part of the public API:
+
+```python
+from gcode_insight import load_registry
+
+p1s = load_registry().printer("P1S")
+print(p1s.build_volume_mm, p1s.ams_max_slots, p1s.connection.slicer_model_id.value)
+# (256.0, 256.0, 256.0) 16 C12
+```
+
+Each printer has its manufacturer sources, and since 0.4.0 (registry schema 2) connection
+facts such as the camera port, each marked as official or community-sourced. Facts no source
+settles are `None`. See [docs/registry.md](docs/registry.md) for the API and the data.
+
 ### Timeline per layer and per tool
 
 Each layer (and the start-up section) carries `start_s` and `end_s`, the model time from the

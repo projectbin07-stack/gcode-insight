@@ -20,6 +20,20 @@ All notable changes to this project are documented here. The format follows
     `ToolChange(from_tool, to_tool, layer, time_s, line)`, exported from the package.
 - `schema_version` is now 4. The change is additive: every existing field keeps its name,
   type and meaning, and `tool_changes` stays the count (now always `len(tool_change_events)`).
+- The printer and material registry is now public API, exported from `gcode_insight`
+  (`load_registry`, `parse_registry`, `Registry`, `PrinterSpec`, `MaterialSpec`, `Source`,
+  `RegistryError`, `REGISTRY_PATH`, `REGISTRY_SCHEMA_VERSION`, and the new `Fact`,
+  `ConnectionFacts`, `AmsModel`), documented in [docs/registry.md](docs/registry.md) and kept
+  stable within a major version.
+- Registry schema 2 (`registry_version` 2): per-printer connection facts (`slicer_model_id`,
+  `reported_project_name`, `camera_stream`, `camera_port`, `chamber_temperature`) and a list
+  of AMS models with their `get_version` module names. Every fact has dated https sources and
+  says whether they are official (Bambu Lab's pages or Bambu Studio's source) or community
+  (OpenBambuAPI, ha-bambulab). Facts no source settles are left out and listed in
+  `connection_note`. The change is additive: every schema 1 field is unchanged, and the new
+  loader still reads schema 1 files. The 0.3.0 loader refuses schema 2, so consumers must copy
+  `registry.py` and `print_registry.json` together, as their CI check requires.
+- The registry loader now also checks that source dates are `YYYY-MM-DD`.
 
 ## [0.3.0] - 2026-11-25
 
